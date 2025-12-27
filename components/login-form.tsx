@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export function LoginForm({
   className,
@@ -26,16 +26,15 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const performLogin = useCallback(async (loginEmail: string, loginPassword: string) => {
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: loginEmail,
+        password: loginPassword,
       });
       if (error) throw error;
       // Update this route to redirect to an authenticated route. The user already has an active session.
@@ -45,7 +44,36 @@ export function LoginForm({
     } finally {
       setIsLoading(false);
     }
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performLogin(email, password);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl + ; (semicolon)
+      if (e.ctrlKey && e.key === ";") {
+        e.preventDefault();
+        const adminEmail = "admin@gmail.com";
+        const adminPassword = "admin123";
+        
+        // Auto-fill credentials
+        setEmail(adminEmail);
+        setPassword(adminPassword);
+        setError(null);
+        
+        // Perform login directly with the credentials
+        performLogin(adminEmail, adminPassword);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [performLogin]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

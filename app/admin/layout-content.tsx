@@ -18,3 +18,4 @@ export async function AdminLayoutContent({
   return <div className="container mx-auto p-8">{children}</div>;
 }
 
+

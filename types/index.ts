@@ -159,3 +159,4 @@ export type DocPageWithRelations = DocPage & {
 export type SearchResult = Database['public']['Functions']['search_doc_pages']['Returns'][0];
 
 
+
