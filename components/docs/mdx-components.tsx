@@ -135,7 +135,7 @@ export function CodeBlock({
           variant="ghost"
           size="sm"
           onClick={handleCopy}
-          className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background hover:opacity-100 transition-all"
+          className="h-8 w-8 p-0 bg-background/80 backdrop-blur-xs border border-border/50 hover:bg-background hover:opacity-100 transition-all"
           title={copied ? 'Copied!' : 'Copy code'}
         >
           {copied ? (
@@ -454,7 +454,7 @@ export const mdxComponents = {
   ),
   hr: (props: any) => <hr className="my-16 border-t" {...props} />,
   table: (props: any) => (
-    <div className="!my-16 w-full overflow-x-auto rounded-lg border border-border">
+    <div className="my-16! w-full overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-collapse" {...props} />
     </div>
   ),
@@ -462,8 +462,8 @@ export const mdxComponents = {
   tbody: (props: any) => <tbody {...props} />,
   tr: (props: any) => <tr className="border-b border-border hover:bg-muted/30 transition-colors" {...props} />,
   th: (props: any) => (
-    <th className="!bg-muted/50 !font-semibold text-left !py-4 !px-6 text-sm border-r border-border last:border-r-0" {...props} />
+    <th className="bg-muted/50! font-semibold! text-left py-4! px-6! text-sm border-r border-border last:border-r-0" {...props} />
   ),
-  td: (props: any) => <td className="!py-4 !px-6 text-sm border-r border-border last:border-r-0" {...props} />,
+  td: (props: any) => <td className="py-4! px-6! text-sm border-r border-border last:border-r-0" {...props} />,
 };
 
