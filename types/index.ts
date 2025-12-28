@@ -50,6 +50,11 @@ export type Database = {
           created_at: string;
           updated_at: string;
           published_at: string | null;
+          api_endpoint: string | null;
+          api_method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | null;
+          api_parameters: any | null;
+          api_request_body_schema: any | null;
+          api_response_example: any | null;
         };
         Insert: {
           id?: string;
@@ -66,6 +71,11 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           published_at?: string | null;
+          api_endpoint?: string | null;
+          api_method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | null;
+          api_parameters?: any | null;
+          api_request_body_schema?: any | null;
+          api_response_example?: any | null;
         };
         Update: {
           id?: string;
@@ -82,6 +92,11 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           published_at?: string | null;
+          api_endpoint?: string | null;
+          api_method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | null;
+          api_parameters?: any | null;
+          api_request_body_schema?: any | null;
+          api_response_example?: any | null;
         };
       };
       tags: {
@@ -157,6 +172,25 @@ export type DocPageWithRelations = DocPage & {
 };
 
 export type SearchResult = Database['public']['Functions']['search_doc_pages']['Returns'][0];
+
+// API Playground types
+export type ApiParameter = {
+  name: string;
+  type: 'string' | 'integer' | 'number' | 'boolean' | 'array' | 'object';
+  description?: string;
+  location: 'query' | 'path' | 'header' | 'body';
+  required: boolean;
+  default?: string | number | boolean;
+  enum?: (string | number)[];
+};
+
+export type ApiPlaygroundPage = DocPageWithRelations & {
+  api_endpoint: string | null;
+  api_method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | null;
+  api_parameters: ApiParameter[] | null;
+  api_request_body_schema: any | null;
+  api_response_example: any | null;
+};
 
 
 

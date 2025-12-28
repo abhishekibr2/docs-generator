@@ -5,6 +5,7 @@ import { getPageBySlugArray } from '@/lib/supabase/queries';
 import { DocBreadcrumb } from '@/components/docs/breadcrumb';
 import { TableOfContents } from '@/components/docs/toc';
 import { mdxComponents } from '@/components/docs/mdx-components';
+import { ApiPlayground } from '@/components/api-playground/api-playground';
 import type { Metadata } from 'next';
 
 interface PageProps {
@@ -43,19 +44,107 @@ async function PageContent({ params }: { params: Promise<{ slug: string[] }> }) 
     );
   }
 
-  if (!page.content || page.content.trim().length === 0) {
+  // Check if this is an API Reference category page with API playground data
+  const isApiReferenceCategory = page.category?.slug?.toLowerCase().includes('api-reference') || 
+                                  page.category?.name?.toLowerCase().includes('api reference');
+  const hasApiPlaygroundData = page.api_endpoint && page.api_method;
+  const hasContent = page.content && page.content.trim().length > 0;
+
+  // If it's an API Reference page with playground data, render the playground
+  // Also show content if it exists (above the playground)
+  // Note: ApiPlayground component already renders title and description, so we don't duplicate them here
+  if (isApiReferenceCategory && hasApiPlaygroundData) {
     return (
       <>
         <DocBreadcrumb page={page} />
-      <div className="mt-12 space-y-4">
-        <h1 className="scroll-m-20 text-4xl font-bold tracking-tight lg:text-5xl">
-          {page.title}
-        </h1>
-        {page.description && (
-          <p className="text-xl text-muted-foreground">{page.description}</p>
+
+        {hasContent && (
+          <div className="mt-12 pb-8">
+            <article
+              className="prose prose-slate dark:prose-invert max-w-none
+              prose-headings:scroll-mt-24
+              prose-headings:font-bold
+              prose-h1:text-4xl prose-h1:tracking-tight prose-h1:mt-16 prose-h1:mb-6
+              prose-h2:text-3xl prose-h2:tracking-tight prose-h2:mt-14 prose-h2:mb-5 prose-h2:pb-3 prose-h2:border-b
+              prose-h3:text-2xl prose-h3:tracking-tight prose-h3:mt-10 prose-h3:mb-4
+              prose-h4:text-xl prose-h4:tracking-tight prose-h4:mt-8 prose-h4:mb-3
+              prose-p:text-base prose-p:leading-7 prose-p:my-6
+              prose-ul:my-6 prose-ul:leading-7
+              prose-ol:my-6 prose-ol:leading-7
+              prose-li:my-2
+              prose-code:text-sm prose-code:bg-muted prose-code:border prose-code:rounded prose-code:font-mono prose-code:font-semibold prose-code:before:content-[''] prose-code:after:content-['']
+              prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:border prose-pre:rounded-lg prose-pre:my-8  prose-pre:overflow-x-auto
+              prose-strong:font-semibold prose-strong:text-foreground
+              prose-em:italic
+              prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-3 prose-blockquote:px-5 prose-blockquote:rounded-r prose-blockquote:my-8 prose-blockquote:not-italic
+              prose-img:rounded-lg prose-img:shadow-lg prose-img:my-10
+              prose-a:text-primary prose-a:font-medium prose-a:no-underline prose-a:transition-colors hover:prose-a:underline hover:prose-a:text-primary/80
+              prose-table:w-full prose-table:my-16 prose-table:border-collapse
+              prose-thead:border-b-2
+              prose-th:bg-muted/50 prose-th:font-semibold prose-th:text-left prose-th:py-4 prose-th:px-6 prose-th:text-sm
+              prose-td:border-t prose-td:py-4 prose-td:px-6 prose-td:text-sm
+              prose-hr:my-16 prose-hr:border-border"
+            >
+              <MDXRemote
+                source={page.content}
+                components={mdxComponents}
+                options={{
+                  parseFrontmatter: false,
+                  mdxOptions: {
+                    remarkPlugins: [remarkGfm],
+                  },
+                }}
+              />
+            </article>
+          </div>
         )}
-      </div>
-      <div className="mt-8 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-6">
+
+        <div className={hasContent ? 'mt-12 pb-16' : 'mt-12 pb-16'}>
+          <ApiPlayground page={page as any} />
+        </div>
+      </>
+    );
+  }
+
+  // For API Reference pages without playground data, show content if it exists
+  if (isApiReferenceCategory && !hasApiPlaygroundData) {
+    if (!hasContent) {
+      return (
+        <>
+          <DocBreadcrumb page={page} />
+          <div className="mt-12 space-y-4">
+            <h1 className="scroll-m-20 text-4xl font-bold tracking-tight lg:text-5xl">
+              {page.title}
+            </h1>
+            {page.description && (
+              <p className="text-xl text-muted-foreground">{page.description}</p>
+            )}
+          </div>
+          <div className="mt-8 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-6">
+            <p className="text-yellow-800 dark:text-yellow-200">
+              This page exists but has no content yet. Add content or configure API Playground settings.
+            </p>
+          </div>
+        </>
+      );
+    }
+    // Fall through to render content below
+  }
+
+  // For non-API Reference pages or API Reference pages without playground data but with content
+  if (!hasContent) {
+    return (
+      <>
+        <DocBreadcrumb page={page} />
+        <div className="mt-12 space-y-4">
+          <h1 className="scroll-m-20 text-4xl font-bold tracking-tight lg:text-5xl">
+            {page.title}
+          </h1>
+          {page.description && (
+            <p className="text-xl text-muted-foreground">{page.description}</p>
+          )}
+        </div>
+        <div className="mt-8 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-6">
           <p className="text-yellow-800 dark:text-yellow-200">
             This page exists but has no content yet.
           </p>
@@ -136,7 +225,7 @@ export default function DocPage({ params }: PageProps) {
             </div>
           </main>
 
-          <aside className="hidden xl:block w-72 shrink-0 pr-8">
+          <aside className="hidden xl:block w-96 shrink-0 pr-8">
             <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto py-8 lg:py-12 overscroll-contain">
               <TableOfContents />
             </div>

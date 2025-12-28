@@ -5,6 +5,9 @@ import { getPageBySlugArray } from '@/lib/supabase/queries';
 import { DocBreadcrumb } from '@/components/docs/breadcrumb';
 import { TableOfContents } from '@/components/docs/toc';
 import { mdxComponents } from '@/components/docs/mdx-components';
+import { ApiPlaygroundProvider } from '@/components/api-playground/api-playground';
+import { ApiPlayground } from '@/components/api-playground/api-playground';
+import { CurlCommandSidebar } from '@/components/api-playground/api-playground';
 import type { Metadata } from 'next';
 
 interface PageProps {
@@ -31,7 +34,66 @@ async function PageContent({ params }: { params: Promise<{ slug: string[] }> }) 
     );
   }
 
-  if (!page.content || page.content.trim().length === 0) {
+  // Check if this page has API playground data
+  const hasApiPlaygroundData = page.api_endpoint && page.api_method;
+  const hasContent = page.content && page.content.trim().length > 0;
+
+  // If page has API playground data, render it (with content if available)
+  if (hasApiPlaygroundData) {
+    return (
+      <>
+        <DocBreadcrumb page={page} />
+
+        {hasContent && (
+          <div className="mt-12 pb-8">
+            <article
+              className="prose prose-slate dark:prose-invert max-w-none
+              prose-headings:scroll-mt-24
+              prose-headings:font-bold
+              prose-h1:text-4xl prose-h1:tracking-tight prose-h1:mt-16 prose-h1:mb-6
+              prose-h2:text-3xl prose-h2:tracking-tight prose-h2:mt-14 prose-h2:mb-5 prose-h2:pb-3 prose-h2:border-b
+              prose-h3:text-2xl prose-h3:tracking-tight prose-h3:mt-10 prose-h3:mb-4
+              prose-h4:text-xl prose-h4:tracking-tight prose-h4:mt-8 prose-h4:mb-3
+              prose-p:text-base prose-p:leading-7 prose-p:my-6
+              prose-ul:my-6 prose-ul:leading-7
+              prose-ol:my-6 prose-ol:leading-7
+              prose-li:my-2
+              prose-code:text-sm prose-code:bg-muted prose-code:border prose-code:rounded prose-code:px-[0.4rem] prose-code:py-[0.2rem] prose-code:font-mono prose-code:font-semibold prose-code:before:content-[''] prose-code:after:content-['']
+              prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:border prose-pre:rounded-lg prose-pre:my-8 prose-pre:p-5 prose-pre:overflow-x-auto
+              prose-strong:font-semibold prose-strong:text-foreground
+              prose-em:italic
+              prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-3 prose-blockquote:px-5 prose-blockquote:rounded-r prose-blockquote:my-8 prose-blockquote:not-italic
+              prose-img:rounded-lg prose-img:shadow-lg prose-img:my-10
+              prose-a:text-primary prose-a:font-medium prose-a:no-underline prose-a:transition-colors hover:prose-a:underline hover:prose-a:text-primary/80
+              prose-table:w-full prose-table:my-16 prose-table:border-collapse
+              prose-thead:border-b-2
+              prose-th:bg-muted/50 prose-th:font-semibold prose-th:text-left prose-th:py-4 prose-th:px-6 prose-th:text-sm
+              prose-td:border-t prose-td:py-4 prose-td:px-6 prose-td:text-sm
+              prose-hr:my-16 prose-hr:border-border"
+            >
+              <MDXRemote
+                source={page.content}
+                components={mdxComponents}
+                options={{
+                  parseFrontmatter: false,
+                  mdxOptions: {
+                    remarkPlugins: [remarkGfm],
+                  },
+                }}
+              />
+            </article>
+          </div>
+        )}
+
+        <div className={hasContent ? 'mt-12 pb-16' : 'mt-12 pb-16'}>
+          <ApiPlayground page={page as any} renderCurlInSidebar={true} />
+        </div>
+      </>
+    );
+  }
+
+  // If no content and no API playground data
+  if (!hasContent) {
     return (
       <>
         <DocBreadcrumb page={page} />
@@ -151,11 +213,15 @@ export async function generateMetadata({
   }
 }
 
-export default function DocPage({ params }: PageProps) {
-  return (
+export default async function DocPage({ params }: PageProps) {
+  const resolvedParams = await params;
+  const page = await getPageBySlugArray(resolvedParams.slug);
+  const hasApiPlaygroundData = page?.api_endpoint && page?.api_method;
+
+  const content = (
     <div className="relative">
       <div className="mx-auto w-full max-w-screen-2xl">
-        <div className="flex gap-8 lg:gap-12 xl:gap-16">
+        <div className="flex">
           <main className="flex-1 min-w-0 py-8 lg:py-12 px-6 md:px-10 lg:px-16">
             <div className="mx-auto w-full max-w-4xl">
               <Suspense fallback={<PageSkeleton />}>
@@ -164,13 +230,38 @@ export default function DocPage({ params }: PageProps) {
             </div>
           </main>
 
-          <aside className="hidden xl:block w-72 shrink-0 pr-8">
+          <aside className="hidden xl:block w-96 shrink-0 pr-8">
             <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto py-8 lg:py-12 overscroll-contain">
-              <TableOfContents />
+              <Suspense fallback={<div className="h-32 bg-muted rounded animate-pulse" />}>
+                <SidebarContent params={params} />
+              </Suspense>
             </div>
           </aside>
         </div>
       </div>
     </div>
   );
+
+  // Wrap with provider if it's an API playground page
+  if (hasApiPlaygroundData) {
+    return (
+      <ApiPlaygroundProvider page={page as any}>
+        {content}
+      </ApiPlaygroundProvider>
+    );
+  }
+
+  return content;
+}
+
+async function SidebarContent({ params }: { params: Promise<{ slug: string[] }> }) {
+  const resolvedParams = await params;
+  const page = await getPageBySlugArray(resolvedParams.slug);
+  const hasApiPlaygroundData = page?.api_endpoint && page?.api_method;
+
+  if (hasApiPlaygroundData) {
+    return <CurlCommandSidebar />;
+  }
+
+  return <TableOfContents />;
 }

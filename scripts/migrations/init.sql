@@ -260,3 +260,24 @@ VALUES
   ('Advanced', 'advanced'),
   ('API', 'api'),
   ('Tutorial', 'tutorial');
+
+  -- Migration for the doc_pages table
+  -- Migration: Add API Playground fields to doc_pages table
+-- This migration adds fields to support interactive API playground functionality
+
+-- Add API playground columns to doc_pages table
+ALTER TABLE doc_pages
+ADD COLUMN IF NOT EXISTS api_endpoint VARCHAR(500),
+ADD COLUMN IF NOT EXISTS api_method VARCHAR(10) CHECK (api_method IN ('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS')),
+ADD COLUMN IF NOT EXISTS api_parameters JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS api_request_body_schema JSONB,
+ADD COLUMN IF NOT EXISTS api_response_example JSONB;
+
+-- Add index for API endpoint lookups
+CREATE INDEX IF NOT EXISTS idx_doc_pages_api_endpoint ON doc_pages(api_endpoint) WHERE api_endpoint IS NOT NULL;
+
+-- Add comment to explain the structure
+COMMENT ON COLUMN doc_pages.api_parameters IS 'Array of parameter definitions. Each parameter has: name, type, description, location (query/path/header/body), required (boolean), default (optional)';
+COMMENT ON COLUMN doc_pages.api_request_body_schema IS 'JSON schema for request body validation and form generation';
+COMMENT ON COLUMN doc_pages.api_response_example IS 'Example response JSON for documentation purposes';
+
